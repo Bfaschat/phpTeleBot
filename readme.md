@@ -2,7 +2,7 @@
 *Really simple Telegram bot script*
 ## System requirements
 * PHP version > 5
-* `php_openssl` module enables in `php.ini`
+* `php_openssl` module enabled in `php.ini`
 * Granting write permission to the script for the script directory
 
 ## Installation
