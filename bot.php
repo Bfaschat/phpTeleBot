@@ -1,8 +1,10 @@
 <?php
-$CONFIG_DIR_PATH = './config';
-$CONFIG_FILE_FULL_NAME = './config/bots.cfg';
-$SUCCESS = false;
-processNewBot();
+define('CONFIG_DIR_NOT_FOUND', 1);
+define('CONFIG_FILE_NOT_FOUND', 1<<1);
+define('CONFIG_DIR_PATH', './config');
+define('CONFIG_FILE_FULL_NAME', './config/bots.cfg');
+createInfrastructure(checkInfrastructure());
+$CREATED_SUCCESSFULLY = false;
 if(isset($_GET['bot'])) { //Processing a request from Telegram
 	$config = readConfig();	
 	$APIToken = $_GET['bot'];
@@ -12,63 +14,51 @@ if(isset($_GET['bot'])) { //Processing a request from Telegram
 		processUpdate($update, $APIToken);
 	}
 }
-function sendMessage ($update, $text, $apiToken) {
-	$chat = $update->message->chat->id;
-	$params = json_encode(array('chat_id' => $chat, 'text' => $text));
-	sendRequest($params, 'sendMessage', $apiToken);
+if(isset($_POST['name'], $_POST['APIToken'])) { //Add a new bot
+	addNewBot($_POST['name'], $_POST['APIToken']);
 }
 function checkInfrastructure() { //Check if there is the config directory in the script directory
-	$configDirExists = is_dir($GLOBALS['CONFIG_DIR_PATH']);
-	$configFileExists = is_file($GLOBALS['CONFIG_FILE_FULL_NAME']);
+	$code = 0; //Everything is OK
+	$configDirExists = is_dir(CONFIG_DIR_PATH);
+	$configFileExists = is_file(CONFIG_FILE_FULL_NAME);
 	if(!$configDirExists)
-		return 1;
+		$code = $code | CONFIG_DIR_NOT_FOUND;
 	if(!$configFileExists)
-		return 2;	
-	return 0;
+		$code = $code | CONFIG_FILE_NOT_FOUND;
+	return $code;
 }
-function createInfrastructure($level) {
-	$cfgDirCreated = false;
-	$cfgFileCreated = false;
+function createInfrastructure($code) {	
 	//Directory
-	if($level == 1)			
-		$cfgDirCreated = mkdir($GLOBALS['CONFIG_DIR_PATH']);		
-	else
-		$cfgDirCreated = true;	
+	if(($code & CONFIG_DIR_NOT_FOUND) == CONFIG_DIR_NOT_FOUND) {		
+		if(mkdir(CONFIG_DIR_PATH))
+			$code = $code & ~CONFIG_DIR_NOT_FOUND;				
+	}		
 	//File	
-	if($level == 1 || $level == 2) {
-		$file = fopen($GLOBALS['CONFIG_FILE_FULL_NAME'], 'wb');
+	if(($code & CONFIG_FILE_NOT_FOUND) == CONFIG_FILE_NOT_FOUND) {
+		$file = fopen(CONFIG_FILE_FULL_NAME, 'wb');
 		if($file != false)
-			$cfgFileCreated = fclose($file);
-	}else
-		$cfgFileCreated = true;
-	
-	if(!$cfgDirCreated)
-		return 1;
-	if(!$cfgFileCreated)
-		return 2;
-	return 0;
+			$code = $code & ~CONFIG_FILE_NOT_FOUND;	
+	}	
+	return $code;
 }
 function readConfig() {
-	$configText = file_get_contents($GLOBALS['CONFIG_FILE_FULL_NAME']);
+	$configText = file_get_contents(CONFIG_FILE_FULL_NAME);
 	$config = json_decode($configText);
-	return $config;
+	//Validate config
+	$valid = is_object($config) && property_exists($config, 'bots');
+	if($valid)
+		return $config;
+	else
+		return false;
 }
 function writeConfig($config) {	
-	file_put_contents($GLOBALS['CONFIG_FILE_FULL_NAME'], json_encode($config));
+	file_put_contents(CONFIG_FILE_FULL_NAME, json_encode($config));
 }
-function processNewBot() {
-	$name = null;
-	$APIToken = null;
-	if(isset($_POST['name']))
-		$name = $_POST['name'];
-	if(isset($_POST['APIToken']))
-		$APIToken = $_POST['APIToken'];
-	if(($name != false )&& ($APIToken != null)) {
+function addNewBot($name, $APIToken) {	
 	$bots = array(array('name' => $name , 'APIToken' => $APIToken));	
-		$result = setUpBot($name, $APIToken);
-		if($result)
-			$GLOBALS['SUCCESS'] = true;
-	}
+	$result = setUpBot($name, $APIToken);
+	if($result)
+		$GLOBALS['CREATED_SUCCESSFULLY'] = true;	
 }
 function sendRequest($json, $methodName, $apiToken) {	
 	$url = 'https://api.telegram.org/bot'.$apiToken.'/'.$methodName;
@@ -92,6 +82,11 @@ function setUpBot($name, $apiToken) {
 	$conf->bots = array(array('name' => $name, 'APIToken' => hash('sha512', $apiToken)));
 	writeConfig($conf);
 	return $response->ok;
+}
+function sendMessage ($update, $text, $apiToken) {
+	$chat = $update->message->chat->id;
+	$params = json_encode(array('chat_id' => $chat, 'text' => $text));
+	sendRequest($params, 'sendMessage', $apiToken);
 }
 //UPDATE PROCESSING ***EDIT HERE***
 function processUpdate($update, $APIToken) {
@@ -128,14 +123,16 @@ class Configuration
 		</form>
 		<div class="notificationBox">
 			<?php
-				if($SUCCESS)
+				if($CREATED_SUCCESSFULLY)
 					echo '<h1>Your bot has been set up successfully!</h1>';
-			?>
-			<h1>Your bot:</h1>
+			?>			
 			<?php
 				$config =  readConfig();
-				$botName = htmlentities($config->bots[0]->name);
-				echo "<p>{$botName}</p>";
+				if(!($config === false)) {
+					$botName = htmlentities($config->bots[0]->name);
+					echo "<h1>Your bot:</h1>";
+					echo "<p>{$botName}</p>";
+				}
 			?>
 		</div>
 	</body>
