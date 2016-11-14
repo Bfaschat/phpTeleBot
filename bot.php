@@ -108,22 +108,34 @@ class Configuration
 	<head>
 		<meta charset="utf-8">
 		<title>Your bots</title>
+		<style>
+			#botInfoForm {
+				padding: 2em;
+			}
+			#botInfoForm input[type=text] {
+				width: 100%;
+			}
+			.notificationBox {
+				padding: 2em;
+			}
+		</style>
 	</head>
 	<body>
-		<form action="" method="POST">
-			Name: <input type="text" name="name" />
-			API Token: <input type="text" name="APIToken" />
+		<form action="" method="POST" id="botInfoForm">
+			<p>Name: <input type="text" name="name" /></p>
+			<p>API Token: <input type="text" name="APIToken"/></p>
 			<input type="submit" value="Link" />
 		</form>
-		<div>
+		<div class="notificationBox">
 			<?php
 				if($SUCCESS)
 					echo '<h1>Your bot has been set up successfully!</h1>';
 			?>
 			<h1>Your bot:</h1>
 			<?php
-				$C =  readConfig();
-				echo $C->bots[0]->name;
+				$config =  readConfig();
+				$botName = htmlentities($config->bots[0]->name);
+				echo "<p>{$botName}</p>";
 			?>
 		</div>
 	</body>
