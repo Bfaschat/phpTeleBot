@@ -5,6 +5,7 @@
 * `php_openssl` module enabled in `php.ini`
 * Granting write permission to the script for the script directory
 * Your server must support `file_get_contents` and `file_put_contents` functions
+* You should access this script only via HTTPS
 
 ## Installation
 1. Just copy the script in any directory that meets the specified requirements.
