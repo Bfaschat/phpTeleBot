@@ -1,9 +1,10 @@
 <?php
 define('CONFIG_DIR_NOT_FOUND', 1);
 define('CONFIG_FILE_NOT_FOUND', 1<<1);
+define('HTTPS_NOT_ENABLED', 1<<2);
 define('CONFIG_DIR_PATH', './config');
 define('CONFIG_FILE_FULL_NAME', './config/bots.cfg');
-createInfrastructure(checkInfrastructure());
+$ic = createInfrastructure(checkInfrastructure());
 $CREATED_SUCCESSFULLY = false;
 if(isset($_GET['bot'])) { //Processing a request from Telegram
 	$config = readConfig();	
@@ -25,6 +26,8 @@ function checkInfrastructure() { //Check if there is the config directory in the
 		$code = $code | CONFIG_DIR_NOT_FOUND;
 	if(!$configFileExists)
 		$code = $code | CONFIG_FILE_NOT_FOUND;
+	if(!isset($_SERVER['HTTPS'])|$_SERVER['HTTPS']=='off')
+		$code = $code | HTTPS_NOT_ENABLED;
 	return $code;
 }
 function createInfrastructure($code) {	
@@ -74,7 +77,9 @@ function sendRequest($json, $methodName, $apiToken) {
 	if ($result === FALSE) { /* Handle error */ }
 	return $result;
 }
-function setUpBot($name, $apiToken) {
+function setUpBot($name, $apiToken) {	
+	if(!isset($_SERVER['HTTPS'])|$_SERVER['HTTPS']=='off')
+		return false;   
 	$url = 'https://'.$_SERVER['HTTP_HOST'].$_SERVER['PHP_SELF'].'?bot='.$apiToken;	
 	$params = json_encode(array('url'=>$url));	
 	$response = json_decode(sendRequest($params, 'setWebhook', $apiToken));	
@@ -116,6 +121,19 @@ class Configuration
 		</style>
 	</head>
 	<body>
+		<?php
+			if($ic > 0) {
+				echo '<p><b>Your server configuration is not compatible with this script.</b></p>';
+				if(($ic & CONFIG_DIR_NOT_FOUND) == CONFIG_DIR_NOT_FOUND)
+					echo '<p>The script could not create the config directory.</p>';
+				if(($ic & CONFIG_FILE_NOT_FOUND) == CONFIG_FILE_NOT_FOUND)
+					echo '<p>The script could not create the config file.</p>';
+				if(($ic & HTTPS_NOT_ENABLED) == HTTPS_NOT_ENABLED)
+					echo '<p>HTTPS is not enabled. This script cannot work via simple http.</p>';
+				die();
+			}
+		?>
+		<?php if($ic === 0): ?>
 		<form action="" method="POST" id="botInfoForm">
 			<p>Name: <input type="text" name="name" /></p>
 			<p>API Token: <input type="text" name="APIToken"/></p>
@@ -135,5 +153,6 @@ class Configuration
 				}
 			?>
 		</div>
+		<?php endif ?>
 	</body>
 </html>
