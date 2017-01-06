@@ -129,8 +129,7 @@ class Configuration
 				if(($ic & CONFIG_FILE_NOT_FOUND) == CONFIG_FILE_NOT_FOUND)
 					echo '<p>The script could not create the config file.</p>';
 				if(($ic & HTTPS_NOT_ENABLED) == HTTPS_NOT_ENABLED)
-					echo '<p>HTTPS is not enabled. This script cannot work via simple http.</p>';
-				die();
+					echo '<p>HTTPS is not enabled. This script cannot work via simple http.</p>';				
 			}
 		?>
 		<?php if($ic === 0): ?>
