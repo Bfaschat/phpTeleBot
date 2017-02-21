@@ -2,8 +2,8 @@
 define('CONFIG_DIR_NOT_FOUND', 1);
 define('CONFIG_FILE_NOT_FOUND', 1<<1);
 define('HTTPS_NOT_ENABLED', 1<<2);
-define('CONFIG_DIR_PATH', './config');
-define('CONFIG_FILE_FULL_NAME', './config/bots.cfg');
+define('CONFIG_DIR_PATH', __DIR__.'/config');
+define('CONFIG_FILE_FULL_NAME', CONFIG_DIR_PATH.'/bots.cfg');
 $ic = createInfrastructure(checkInfrastructure());
 $CREATED_SUCCESSFULLY = false;
 if(isset($_GET['bot'])) { //Processing a request from Telegram
